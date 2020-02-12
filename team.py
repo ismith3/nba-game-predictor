@@ -1,19 +1,23 @@
-class Team:
-  def __init__(self, name, w, l, offrtg, defrtg, fgp, fga, tpp, tpa, atr, rbd, pace):
-    self.name = name
-    self.w = w
-    self.l = l
-    self.offrtg = offrtg
-    self.defrtg = defrtg
-    self.fgp = fgp
-    self.fga = fga
-    self.tpp = tpp
-    self.tpa = tpa
-    self.atr = atr
-    self.rbd = rbd
-    self.pace = pace
+class Team():
+  def __init__(self, teamId, name, w, l, offrtg, defrtg, fgp, fga, tpp, tpa, atr, rbd, pace):
+    self.data = {
+      'teamId': teamId,
+      'name': name,
+      'w': w,
+      'l': l,
+      'offrtg': offrtg,
+      'defrtg': defrtg,
+      'fgp': fgp,
+      'fga': fga,
+      'tpp': tpp,
+      'tpa': tpa,
+      'atr': atr,
+      'rbd': rbd,
+      'pace': pace
+    }
   
   def insert(self):
+    import json
     import pymongo
     from pymongo import MongoClient
 
@@ -22,8 +26,10 @@ class Team:
 
     teams = db.teams
 
-    if(teams.find_one({'name': self.name})) != None:
-      print('already exists in db')
+    if(teams.find_one({'name': self.data['name']})) != None:
+      result = teams.update_one({'name': self.data['name']}, {'$set': self.data})
+      return result.acknowledged
     else:
-      post_id = teams.insert_one(self).inserted_id
-      print(post_id)
+      post_id = teams.insert_one(self.data).inserted_id
+      if(post_id): return True
+      return False
