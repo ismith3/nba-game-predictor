@@ -40,10 +40,16 @@ def fetchData():
   
     newTeam = Team(teamId, name, w, l, offrtg, defrtg, fgp, fga, tpp, tpa, atr, rbd, pace)
     newTeam.insert()
+
+    sys.stdout.write('Fetching team data: {}\r'.format(i + 1))
+    sys.stdout.flush()
+  print('Fetching team data: done ({} objects)'.format(len(base_stats)))
+
   # get schedule ---------------------------------
 
   data = json.loads(requests.get(schedule_url).text)
-  for game in data['league']['standard']:
+  for i in range(0, len(data['league']['standard'])):
+    game = data['league']['standard'][i]
     startTime = datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%S.000Z')
     home = game['hTeam']
     away = game['vTeam']
@@ -54,7 +60,6 @@ def fetchData():
     outcome = None
 
     if(home['score'] and away['score']):
-      print(home['score'], away['score'])
       if(homeScore > awayScore):
         outcome = 'home'
       elif(homeScore < awayScore):
@@ -65,11 +70,18 @@ def fetchData():
     newGame = Game(game['gameId'], startTime, home['teamId'], away['teamId'], outcome)
     newGame.insert()
 
+    sys.stdout.write('Fetching game schedule: {}\r'.format(i + 1))
+    sys.stdout.flush()
+
+  print('Fetching game schedule: done ({} objects)'.format(len(data['league']['standard'])))
+  formatData()
+
 
 def formatData():
   client = MongoClient('localhost', 27017)
   db = client.nba
   teams = db.teams
+
   formatted_data = {}
 
   data = teams.find()
@@ -86,12 +98,27 @@ def formatData():
     arr.append(doc['pace'])
 
     formatted_data[doc['name']] = arr
+
   if(db.data.find()):
     db.data.drop()
   result = db.data.insert_one(formatted_data)
   if(result):
     print('data formatted successfully')
+
   client.close()
 
+def printUpcoming():
+  client = MongoClient('localhost', 27017)
+  db = client.nba
 
-fetchData()
+  games = db.games.find({
+    'startTime': {
+      '$gt': datetime.now()
+    }
+  })
+
+  teamIndex = db.teamIndex.find()[0]
+
+  for i in range(0, 10):
+
+    print(f"{games[i]['startTime']} {teamIndex[games[i]['away']]} @ {teamIndex[games[i]['home']]}")
