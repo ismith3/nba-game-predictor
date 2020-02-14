@@ -2,7 +2,6 @@ import sys
 import data_collector
 import pymongo
 from pymongo import MongoClient
-from datetime import datetime, timezone, timedelta
 
 def start():
   print('--- Neural Network CLI ---')
